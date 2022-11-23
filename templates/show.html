@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Vendor Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    {% load static %}
+    <link rel="stylesheet" href="{% static '/show.css' %}">
+</head>
+<body>
+{% csrf_token %}
+<h2>Vendor Management</h2>
+
+<div class="tab">
+  <button class="tab-links active" data-tab-content-id="vendor-categories">Vendor Categories</button>
+  <button class="tab-links" data-tab-content-id="vendors">Vendors</button>
+</div>
+
+<div id="vendor-categories" class="tab-content active">
+    <h3>Vendor Categories</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Vendor Category</th>
+                <th>Name</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vendor_category in vendor_categories %}
+            <tr>
+                <td>{{ vendor_category.vendorCategory }}</td>
+                <td>{{ vendor_category.vendorCategoryName }}</td>
+                <td>
+                    <a href="javascript:void(0);" class="edit">Edit</a>
+                    <a href="/delete_vendor_category/{{ vendor_category.vendorCategory }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <br>
+    <button class="add-button align-center">Add New</button>
+    <button class="cancel-button align-center" disabled="">Cancel</button>
+
+    <form method="POST" class="add-form" action="/add_vendor_category" hidden>
+        {% csrf_token %}
+        <br>
+        <h3>Add a new vendor category</h3>
+        <label for="add-vendor-category-name">Name:</label>
+        <input type="text" name="vendorCategoryName" id="add-vendor-category-name" required maxlength="30"/>
+        <button type="submit">Add</button>
+    </form>
+
+    <form method="POST" class="update-form" hidden>
+        {% csrf_token %}
+        <br>
+        <h3>Update name</h3>
+        <input type="hidden" name="vendorCategory" required>
+        <label for="update-vendor-category-name">Name:</label>
+        <input type="text" name="vendorCategoryName" id="update-vendor-category-name" required maxlength="30"/>
+        <button type="submit">Update</button>
+    </form>
+</div>
+
+<div id="vendors" class="tab-content">
+    <h3>
+        Vendors
+        <label for="filter-vendor-category">filtered by:</label>
+        <select id="filter-vendor-category" data-value="{{ filtered_by }}">
+            <option value="">None</option>
+            {% for vendor_category in vendor_categories %}
+            <option value="{{ vendor_category.vendorCategory }}">
+                {{ vendor_category.vendorCategoryName }}
+            </option>
+            {% endfor %}
+        </select>
+    </h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Vendor ID</th>
+                <th>Vendor Name</th>
+                <th>Vendor Category</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vendor in vendors %}
+            <tr>
+                <td>{{ vendor.vendorId }}</td>
+                <td>{{ vendor.vendorName }}</td>
+                <td data-value="{{ vendor.vendorCategory.vendorCategory }}">{{ vendor.vendorCategory.vendorCategoryName }}</td>
+                <td>
+                    <a href="javascript:void(0);" class="edit">Edit</a>
+                    <a href="/delete_vendor/{{ vendor.vendorId }}">Delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <br>
+    <br>
+    <button class="add-button align-center">Add New</button>
+    <button class="cancel-button align-center" disabled="">Cancel</button>
+
+    <form method="POST" class="add-form" action="/add_vendor" hidden>
+        {% csrf_token %}
+        <br>
+        <h3>Add a new vendor</h3>
+        <label for="add-vendor-name">Name:</label>
+        <input type="text" name="vendorName" id="add-vendor-name" required maxlength="50"/>
+        <label for="add-vendor-category">Category:</label>
+        <select name="vendorCategory" id="add-vendor-category">
+            {% for vendor_category in vendor_categories %}
+            <option value="{{ vendor_category.vendorCategory }}">
+                {{ vendor_category.vendorCategoryName }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Add</button>
+    </form>
+
+    <form method="POST" class="update-form" hidden>
+        {% csrf_token %}
+        <br>
+        <h3>Update name</h3>
+        <input type="hidden" name="vendorId" required>
+        <label for="update-vendor-name">Name:</label>
+        <input type="text" name="vendorName" id="update-vendor-name" required maxlength="50"/>
+        <label for="update-vendor-category">Category:</label>
+        <select name="vendorCategory" id="update-vendor-category">
+            {% for vendor_category in vendor_categories %}
+            <option value="{{ vendor_category.vendorCategory }}">
+                {{ vendor_category.vendorCategoryName }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit">Update</button>
+    </form>
+</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $(".tab-links").click(function () {
+            const tabContentId = $(this).attr("data-tab-content-id");
+            $(".tab-content").removeClass("active");
+            $(".tab-links").removeClass("active");
+            $(`#${tabContentId}`).addClass("active");
+            $(this).addClass("active");
+        });
+
+        $(".tab-content .add-button").click(function () {
+            $(this).attr("disabled", "");
+            const root_tab_content = $(this).parents(".tab-content");
+            root_tab_content.find(".cancel-button").removeAttr("disabled");
+            root_tab_content.find("form:last").attr("hidden", "hidden");
+            root_tab_content.find("form:first").removeAttr("hidden");
+        });
+
+        $(".tab-content .cancel-button").click(function () {
+            $(this).attr("disabled", "");
+            const root_tab_content = $(this).parents(".tab-content");
+            root_tab_content.find(".add-button").removeAttr("disabled");
+            root_tab_content.find("form").attr("hidden", "hidden");
+        });
+
+        $("#vendor-categories .edit").click(function () {
+            const root_tab_content = $(this).parents(".tab-content");
+            root_tab_content.find(".update-form [name=vendorCategory]").val($(this).parent().siblings(":first").text());
+            root_tab_content.find(".update-form [name=vendorCategoryName]").val($(this).parent().siblings(":nth-of-type(2)").text());
+            root_tab_content.find("form:last").attr("action", "/update_vendor_category/" + $(this).parent().siblings(":first").text()).removeAttr("hidden");
+
+            root_tab_content.find(".add-button").attr("disabled", "");
+            root_tab_content.find(".cancel-button").removeAttr("disabled");
+            root_tab_content.find("form:first").attr("hidden", "hidden");
+        });
+
+        $("#vendors .edit").click(function () {
+            const root_tab_content = $(this).parents(".tab-content");
+            root_tab_content.find(".update-form [name=vendorId]").val($(this).parent().siblings(":first").text());
+            root_tab_content.find(".update-form [name=vendorName]").val($(this).parent().siblings(":nth-of-type(2)").text());
+            root_tab_content.find(".update-form [name=vendorCategory]").val($(this).parent().siblings(":nth-of-type(3)").attr("data-value"));
+            root_tab_content.find("form:last").attr("action", "/update_vendor/" + $(this).parent().siblings(":first").text()).removeAttr("hidden");
+
+            root_tab_content.find(".add-button").attr("disabled", "");
+            root_tab_content.find(".cancel-button").removeAttr("disabled");
+            root_tab_content.find("form:first").attr("hidden", "hidden");
+        });
+
+        const filter_select = $("#filter-vendor-category");
+
+        filter_select.change(function () {
+            window.location.href = window.location.origin + "/show/" + $(this).val();
+        });
+
+        // Initiate DOMs
+        filter_select.val(filter_select.attr("data-value"));
+    });
+</script>
+</html>
